@@ -5,11 +5,7 @@
 
 ## 📋 Sobre o Projeto
 
-O **Junior's Food** é um sistema completo de delivery e pedidos online desenvolvido especificamente para lanchonetes. O projeto oferece uma solução integrada que permite aos clientes navegar pelo cardápio, realizar pedidos e fazer o acompanhamento em tempo real, enquanto oferece aos administradores ferramentas eficientes para gerenciar pedidos, produtos e usuários.
-
-Este sistema foi desenvolvido para atender uma lanchonete local, proporcionando uma experiência digital completa tanto para clientes quanto para proprietários.
-
-![Sistema Junior's Food](cardapio.PNG)
+O **Junior's Food** é um sistema completo de cardapio e pedidos online desenvolvido especificamente para uma lanchonete da minha cidade. O projeto oferece uma solução integrada que permite aos clientes navegar pelo cardápio, realizar pedidos e fazer o acompanhamento em tempo real, enquanto oferece aos administradores ferramentas eficientes para gerenciar pedidos, produtos e usuários.
 
 ## ✨ Funcionalidades Principais
 
@@ -90,23 +86,6 @@ Para testar o sistema, utilize as credenciais de administrador:
 - **Senha**: admin123
 
 *Use estas credenciais para explorar todas as funcionalidades administrativas do sistema.*
-
-## 📱 Interfaces do Sistema
-
-### Tela de Login
-![Tela de Login](teladelogin.PNG)
-
-### Cardápio Principal
-![Cardápio](cardapio.PNG)
-
-### Carrinho de Compras
-![Carrinho](carrinho.PNG)
-
-### Perfil do Usuário
-![Perfil do Usuário](telausu.PNG)
-
-### Painel Administrativo
-![Gestão de Pedidos](admin pedidos gerenciar.PNG)
 
 ## 📂 Estrutura do Projeto
 
