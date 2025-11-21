@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gerenciar Usuários</h2>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if usuarios %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-custom">
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuário</th>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th>Data Cadastro</th>
+                        <th>Total Pedidos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.id }}</td>
+                        <td>{{ usuario.username }}</td>
+                        <td>{{ usuario.email }}</td>
+                        <td>
+                            {% if usuario.is_admin %}
+                                <span class="badge bg-warning">Administrador</span>
+                            {% else %}
+                                <span class="badge bg-info">Cliente</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ usuario.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ usuario.pedidos|length }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center text-muted">Nenhum usuário cadastrado</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gerenciar Produtos</h2>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adicionarProdutoModal">
+        Adicionar Produto
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if produtos %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-custom">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Preço</th>
+                                <th>Categoria</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for produto in produtos %}
+                            <tr>
+                                <td>{{ produto.id }}</td>
+                                <td>{{ produto.nome }}</td>
+                                <td>{{ produto.descricao|truncate(50) if produto.descricao else '-' }}</td>
+                                <td>R$ {{ "%.2f"|format(produto.preco) }}</td>
+                                <td>{{ produto.categoria.nome }}</td>
+                                <td>
+                                    {% if produto.ativo %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-warning" 
+                                            onclick="editarProduto({{ produto.id }}, '{{ produto.nome }}', '{{ produto.descricao }}', {{ produto.preco }}, {{ produto.categoria_id }})">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-sm {% if produto.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                            onclick="toggleProduto({{ produto.id }})">
+                                        {% if produto.ativo %}Desativar{% else %}Ativar{% endif %}
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted">Nenhum produto cadastrado</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="adicionarProdutoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Novo Produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formAdicionarProduto" method="POST" action="{{ url_for('admin_adicionar_produto') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nome" class="form-label">Nome do Produto:*</label>
+                                <input type="text" class="form-control" id="nome" name="nome" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="descricao" class="form-label">Descrição:</label>
+                                <textarea class="form-control" id="descricao" name="descricao" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="preco" class="form-label">Preço (R$):*</label>
+                                <input type="number" class="form-control" id="preco" name="preco" step="0.01" min="0" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="categoria_id" class="form-label">Categoria:*</label>
+                                <select class="form-select" id="categoria_id" name="categoria_id" required>
+                                    <option value="">Selecione uma categoria</option>
+                                    {% for categoria in categorias %}
+                                    <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="imagem" class="form-label">Imagem do Produto:</label>
+                                <input type="file" class="form-control" id="imagem" name="imagem" accept="image/*">
+                                <div class="form-text">
+                                    Formatos permitidos: JPG, PNG, GIF, WEBP. Tamanho máximo: 16MB.
+                                </div>
+                            </div>
+                            
+                            <div class="image-preview mb-3">
+                                <img id="preview-imagem" src="#" alt="Preview" class="img-thumbnail d-none" style="max-height: 200px;">
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Dicas para a imagem:</h6>
+                                    <ul class="small mb-0">
+                                        <li>Use imagens quadradas ou retangulares</li>
+                                        <li>Boa iluminação</li>
+                                        <li>Fundo neutro</li>
+                                        <li>Produto em destaque</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Adicionar Produto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarProdutoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEditarProduto" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" id="editar_produto_id" name="produto_id">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editar_nome" class="form-label">Nome do Produto:*</label>
+                                <input type="text" class="form-control" id="editar_nome" name="nome" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editar_descricao" class="form-label">Descrição:</label>
+                                <textarea class="form-control" id="editar_descricao" name="descricao" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editar_preco" class="form-label">Preço (R$):*</label>
+                                <input type="number" class="form-control" id="editar_preco" name="preco" step="0.01" min="0" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editar_categoria_id" class="form-label">Categoria:*</label>
+                                <select class="form-select" id="editar_categoria_id" name="categoria_id" required>
+                                    <option value="">Selecione uma categoria</option>
+                                    {% for categoria in categorias %}
+                                    <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editar_imagem" class="form-label">Imagem do Produto:</label>
+                                <input type="file" class="form-control" id="editar_imagem" name="imagem" accept="image/*">
+                                <div class="form-text">
+                                    Deixe em branco para manter a imagem atual.
+                                </div>
+                            </div>
+                            
+                            <div class="image-preview mb-3">
+                                <img id="editar_preview_imagem" src="#" alt="Preview" class="img-thumbnail" style="max-height: 200px;">
+                                <div id="editar_imagem_atual" class="mt-2"></div>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="editar_remover_imagem" name="remover_imagem" value="true">
+                                <label class="form-check-label" for="editar_remover_imagem">
+                                    Remover imagem atual
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('imagem').addEventListener('change', function(e) {
+    const preview = document.getElementById('preview-imagem');
+    const file = e.target.files[0];
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+        }
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('d-none');
+    }
+});
+
+document.getElementById('editar_imagem').addEventListener('change', function(e) {
+    const preview = document.getElementById('editar_preview_imagem');
+    const file = e.target.files[0];
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+document.getElementById('editar_remover_imagem').addEventListener('change', function(e) {
+    const fileInput = document.getElementById('editar_imagem');
+    if (this.checked) {
+        fileInput.disabled = true;
+        fileInput.value = '';
+    } else {
+        fileInput.disabled = false;
+    }
+});
+
+function toggleProduto(produtoId) {
+    if (confirm('Tem certeza que deseja alterar o status deste produto?')) {
+        fetch(`/admin/produto/${produtoId}/toggle`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        });
+    }
+}
+
+function editarProduto(id, nome, descricao, preco, categoriaId, imagem) {
+    document.getElementById('editar_produto_id').value = id;
+    document.getElementById('editar_nome').value = nome;
+    document.getElementById('editar_descricao').value = descricao || '';
+    document.getElementById('editar_preco').value = preco;
+    document.getElementById('editar_categoria_id').value = categoriaId;
+    
+    const preview = document.getElementById('editar_preview_imagem');
+    const imagemInfo = document.getElementById('editar_imagem_atual');
+    
+    if (imagem) {
+        preview.src = `{{ url_for('static', filename='uploads/produtos/') }}${imagem}`;
+        imagemInfo.innerHTML = `<small class="text-muted">Imagem atual: ${imagem}</small>`;
+    } else {
+        preview.src = '#';
+        preview.classList.add('d-none');
+        imagemInfo.innerHTML = '<small class="text-muted">Nenhuma imagem</small>';
+    }
+    
+    document.getElementById('editar_remover_imagem').checked = false;
+    document.getElementById('editar_imagem').disabled = false;
+    document.getElementById('editar_imagem').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editarProdutoModal'));
+    modal.show();
+}
+
+document.getElementById('formAdicionarProduto').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao adicionar produto.');
+    });
+});
+
+document.getElementById('formEditarProduto').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const produtoId = document.getElementById('editar_produto_id').value;
+    
+    fetch(`/admin/produto/${produtoId}/editar`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao atualizar produto.');
+    });
+});
+</script>
+{% endblock %}

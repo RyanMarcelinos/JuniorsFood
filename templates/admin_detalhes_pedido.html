@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Detalhes do Pedido #{{ pedido.id }}</h2>
+    <a href="{{ url_for('admin_pedidos') }}" class="btn btn-secondary">Voltar</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Itens do Pedido</div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Quantidade</th>
+                            <th>Preço Unitário</th>
+                            <th>Subtotal</th>
+                            <th>Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pedido.itens %}
+                        <tr>
+                            <td>{{ item.produto.nome }}</td>
+                            <td>{{ item.quantidade }}</td>
+                            <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                            <td>R$ {{ "%.2f"|format(item.quantidade * item.preco_unitario) }}</td>
+                            <td>{{ item.observacao or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                            <td colspan="2"><strong>R$ {{ "%.2f"|format(pedido.total) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Informações do Cliente</div>
+            <div class="card-body">
+                <p><strong>Cliente:</strong> {{ pedido.cliente.username }}</p>
+                <p><strong>Email:</strong> {{ pedido.cliente.email }}</p>
+                <p><strong>Data do Pedido:</strong> {{ pedido.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">Informações do Pagamento</div>
+            <div class="card-body">
+                <p><strong>Forma de Pagamento:</strong> {{ pedido.forma_pagamento|title }}</p>
+                {% if pedido.forma_pagamento == 'dinheiro' and pedido.troco_para > 0 %}
+                <p><strong>Troco para:</strong> R$ {{ "%.2f"|format(pedido.troco_para) }}</p>
+                {% endif %}
+                <p><strong>Status:</strong> 
+                    <span class="status-badge status-{{ pedido.status }}">{{ pedido.status|title }}</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Após o card de informações do pagamento, adicione -->
+        {% if pedido.endereco_entrega %}
+        <div class="card mt-3">
+            <div class="card-header">Endereço de Entrega</div>
+            <div class="card-body">
+                <p class="mb-1"><strong>{{ pedido.endereco_entrega.logradouro }}, {{ pedido.endereco_entrega.numero }}</strong></p>
+                <p class="mb-1">{{ pedido.endereco_entrega.complemento }}</p>
+                <p class="mb-1">{{ pedido.endereco_entrega.bairro }}</p>
+                <p class="mb-1">{{ pedido.endereco_entrega.cidade }} - {{ pedido.endereco_entrega.estado }}</p>
+                <p class="mb-0">CEP: {{ pedido.endereco_entrega.cep }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if pedido.observacao %}
+        <div class="card mt-3">
+            <div class="card-header">Observação Geral</div>
+            <div class="card-body">
+                <p>{{ pedido.observacao }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card mt-3">
+            <div class="card-header">Alterar Status</div>
+            <div class="card-body">
+                <select class="form-select status-select" data-pedido-id="{{ pedido.id }}">
+                    <option value="pendente" {% if pedido.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                    <option value="preparando" {% if pedido.status == 'preparando' %}selected{% endif %}>Preparando</option>
+                    <option value="pronto" {% if pedido.status == 'pronto' %}selected{% endif %}>Pronto</option>
+                    <option value="entregue" {% if pedido.status == 'entregue' %}selected{% endif %}>Entregue</option>
+                    <option value="cancelado" {% if pedido.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelector('.status-select').addEventListener('change', function() {
+    const pedidoId = this.dataset.pedidoId;
+    const novoStatus = this.value;
+    
+    fetch(`/admin/pedido/${pedidoId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: novoStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    });
+});
+</script>
+{% endblock %}

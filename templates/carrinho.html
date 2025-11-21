@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Seu Carrinho</div>
+            <div class="card-body">
+                {% if carrinho_itens %}
+                    {% for item in carrinho_itens %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h5>{{ item.nome }}</h5>
+                                    <p class="text-muted">R$ {{ "%.2f"|format(item.preco) }}</p>
+                                    {% if item.observacao %}
+                                    <p><small>Obs: {{ item.observacao }}</small></p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-4 text-end">
+                                    <a href="{{ url_for('remover_carrinho', index=loop.index0) }}" class="btn btn-danger btn-sm">Remover</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-muted">Carrinho vazio</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Resumo do Pedido</div>
+            <div class="card-body">
+                <p><strong>Total: R$ {{ "%.2f"|format(total) }}</strong></p>
+                
+                {% if carrinho_itens %}
+                <form method="POST" action="{{ url_for('finalizar_pedido') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Endereço de Entrega:</label>
+                        {% set enderecos = current_user.enderecos %}
+                        {% if enderecos %}
+                            <select class="form-select" name="endereco_entrega_id" required>
+                                <option value="">Selecione o endereço de entrega</option>
+                                {% for endereco in enderecos %}
+                                <option value="{{ endereco.id }}" {% if endereco.principal %}selected{% endif %}>
+                                    {{ endereco.logradouro }}, {{ endereco.numero }} - {{ endereco.bairro }}
+                                    {% if endereco.principal %}(Principal){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">
+                                <a href="{{ url_for('meus_enderecos') }}">Gerenciar endereços</a>
+                            </small>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <p class="mb-2">Você precisa cadastrar um endereço para entrega.</p>
+                                <a href="{{ url_for('meus_enderecos') }}" class="btn btn-sm btn-warning">
+                                    Cadastrar Endereço
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Forma de Pagamento:</label>
+                        <select class="form-select" name="forma_pagamento" required>
+                            <option value="">Selecione...</option>
+                            <option value="cartao">Cartão</option>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="troco-field" style="display: none;">
+                        <label class="form-label">Troco para:</label>
+                        <input type="number" class="form-control" name="troco_para" step="0.01" min="{{ total }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Observação Geral:</label>
+                        <textarea class="form-control" name="observacao_geral" rows="3"></textarea>
+                    </div>
+                    
+                    {% if enderecos %}
+                    <button type="submit" class="btn btn-primary w-100">Finalizar Pedido</button>
+                    {% endif %}
+                </form>
+                {% endif %}
+                
+                <a href="{{ url_for('cardapio') }}" class="btn btn-outline-secondary w-100 mt-2">Continuar Comprando</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelector('select[name="forma_pagamento"]').addEventListener('change', function() {
+    const trocoField = document.getElementById('troco-field');
+    if (this.value === 'dinheiro') {
+        trocoField.style.display = 'block';
+    } else {
+        trocoField.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

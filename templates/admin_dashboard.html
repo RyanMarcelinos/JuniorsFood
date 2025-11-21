@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Pedidos</h5>
+                <h2 class="card-text">{{ total_pedidos }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Pendentes</h5>
+                <h2 class="card-text">{{ pedidos_pendentes }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Preparando</h5>
+                <h2 class="card-text">{{ pedidos_preparando }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Total Usuários</h5>
+                <h2 class="card-text">{{ total_usuarios }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Ações Rápidas</div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin_pedidos') }}" class="btn btn-primary">Ver Pedidos</a>
+                    <a href="{{ url_for('admin_produtos') }}" class="btn btn-outline-primary">Gerenciar Produtos</a>
+                    <a href="{{ url_for('admin_categorias') }}" class="btn btn-outline-primary">Gerenciar Categorias</a>
+                    <a href="{{ url_for('admin_usuarios') }}" class="btn btn-outline-primary">Ver Usuários</a>
+                    <a href="{{ url_for('admin_criar_pedidos_teste') }}" class="btn btn-outline-warning">Criar Pedidos Teste</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Pedidos Recentes</div>
+            <div class="card-body">
+                {% if pedidos_recentes %}
+                    {% for pedido in pedidos_recentes %}
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <div>
+                            <strong>#{{ pedido.id }}</strong> - {{ pedido.cliente.username }}
+                            <br>
+                            <small class="text-muted">{{ pedido.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                        </div>
+                        <span class="status-badge status-{{ pedido.status }}">{{ pedido.status|title }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-muted">Nenhum pedido recente</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('admin_pedidos') }}" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

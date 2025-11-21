@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0">Criar Pedidos de Teste</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">O que esta ação faz?</h5>
+                        <p class="mb-0">Cria 30 pedidos de teste com dados aleatórios para simular um ambiente de produção real.</p>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Características dos pedidos:</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">📅 Datas dos últimos 30 dias</li>
+                                <li class="list-group-item">🔄 Diferentes status</li>
+                                <li class="list-group-item">💳 Várias formas de pagamento</li>
+                                <li class="list-group-item">🛍️ 1-4 itens por pedido</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Distribuição dos status:</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">⏳ Pendente: 30%</li>
+                                <li class="list-group-item">👨‍🍳 Preparando: 30%</li>
+                                <li class="list-group-item">✅ Pronto: 20%</li>
+                                <li class="list-group-item">🚚 Entregue: 15%</li>
+                                <li class="list-group-item">❌ Cancelado: 5%</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Atenção:</strong> Esta ação não pode ser desfeita! Os pedidos serão criados com dados reais no banco de dados.
+                    </div>
+
+                    <div class="text-center">
+                        <button class="btn btn-warning btn-lg" id="criarPedidosTeste">
+                            <i class="fas fa-plus-circle"></i> Criar 30 Pedidos de Teste
+                        </button>
+                    </div>
+
+                    <div id="mensagemPedidosTeste" class="mt-4"></div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <a href="{{ url_for('admin_pedidos') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar para Pedidos
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('criarPedidosTeste').addEventListener('click', function() {
+    if (!confirm('Tem certeza que deseja criar 30 pedidos de teste? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+    
+    const btn = this;
+    const originalText = btn.textContent;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando pedidos...';
+    btn.disabled = true;
+    
+    fetch('{{ url_for("admin_criar_pedidos_teste") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const mensagemDiv = document.getElementById('mensagemPedidosTeste');
+        if (data.success) {
+            mensagemDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h5><i class="fas fa-check-circle"></i> Sucesso!</h5>
+                    <p class="mb-2">${data.message}</p>
+                    <p class="mb-0">Redirecionando para a página de pedidos...</p>
+                </div>
+            `;
+            // Recarregar a página após 3 segundos
+            setTimeout(() => {
+                window.location.href = "{{ url_for('admin_pedidos') }}";
+            }, 3000);
+        } else {
+            mensagemDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Erro!</h5>
+                    <p class="mb-0">${data.message}</p>
+                </div>
+            `;
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        document.getElementById('mensagemPedidosTeste').innerHTML = `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle"></i> Erro de conexão!</h5>
+                <p class="mb-0">Erro: ${error}</p>
+            </div>
+        `;
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

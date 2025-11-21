@@ -1,0 +1,511 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-tags me-2"></i>Categorias
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn categoria-btn active" id="btn-todos">
+                        <i class="fas fa-th-large me-2"></i>Todos os Produtos
+                    </button>
+                    {% for categoria in categorias %}
+                    <button class="btn categoria-btn" data-categoria-id="{{ categoria.id }}">
+                        <i class="fas fa-{{ 
+                            'pizza-slice' if categoria.nome == 'Pizzas' 
+                            else 'hamburger' if categoria.nome == 'Lanches' 
+                            else 'wine-glass' if categoria.nome == 'Bebidas' 
+                            else 'ice-cream' if categoria.nome == 'Sobremesas' 
+                            else 'utensils' 
+                        }} me-2"></i>
+                        {{ categoria.nome }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body text-center">
+                <h6><i class="fas fa-shopping-cart me-2"></i>Seu Carrinho</h6>
+                <div id="carrinho-resumo" class="mt-2">
+                    {% if session.carrinho %}
+                        <span class="badge bg-warning text-dark fs-6">{{ session.carrinho|length }} itens</span>
+                    {% else %}
+                        <span class="text-muted">Vazio</span>
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('carrinho') }}" class="btn btn-warning btn-sm mt-2 w-100">
+                    Ver Carrinho
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="fas fa-utensils me-2"></i>
+                    <span id="categoria-titulo">Todos os Produtos</span>
+                </span>
+                <div>
+                    <span class="badge bg-primary ms-2" id="contador-produtos">0 produtos</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Buscar produtos...">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="produtos-container">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p class="text-muted">Carregando produtos...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="produtoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Adicionar ao Carrinho
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="form-produto">
+                <div class="modal-body">
+                    <input type="hidden" id="produto_id" name="produto_id">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="produto-imagem-container">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h4 id="produto-nome" class="product-title"></h4>
+                            <p id="produto-descricao" class="product-description"></p>
+                            <p class="product-price" id="produto-preco"></p>
+                            
+                            <div class="mb-3">
+                                <label for="observacao" class="form-label">
+                                    <i class="fas fa-edit me-2"></i>Observação:
+                                </label>
+                                <textarea class="form-control" id="observacao" name="observacao" 
+                                          rows="3" placeholder="Ex: Sem cebola, maionese à parte..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-cart-plus me-2"></i>Adicionar ao Carrinho
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const produtoImagens = {
+    1: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    2: 'https://images.unsplash.com/photo-1553979459-d2229ba7433f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    3: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    4: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    5: 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    6: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    7: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    8: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    9: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    10: 'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+    11: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'
+};
+
+class CardapioManagerApp {
+    constructor() {
+        this.produtosCarregados = [];
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.carregarTodosProdutos();
+    }
+
+    setupEventListeners() {
+        document.getElementById('btn-todos').addEventListener('click', () => {
+            this.carregarTodosProdutos();
+        });
+
+        document.querySelectorAll('.categoria-btn[data-categoria-id]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const categoriaId = e.target.getAttribute('data-categoria-id');
+                this.carregarProdutos(parseInt(categoriaId));
+            });
+        });
+
+        this.setupSearch();
+
+        document.getElementById('form-produto').addEventListener('submit', (e) => {
+            this.adicionarAoCarrinho(e);
+        });
+    }
+
+    async carregarProdutos(categoriaId) {
+        try {
+            this.mostrarLoading(true);
+            
+            console.log(`Carregando produtos da categoria: ${categoriaId}`);
+            const response = await fetch(`/api/produtos/${categoriaId}`);
+            
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            
+            const produtos = await response.json();
+            console.log('Produtos carregados:', produtos);
+            
+            this.produtosCarregados = produtos;
+            this.exibirProdutos(produtos);
+            this.atualizarCategoriaAtiva(categoriaId);
+            
+            const categoriaBtn = document.querySelector(`.categoria-btn[data-categoria-id="${categoriaId}"]`);
+            if (categoriaBtn) {
+                const categoriaNome = categoriaBtn.textContent.trim();
+                document.getElementById('categoria-titulo').textContent = categoriaNome;
+            }
+
+        } catch (error) {
+            console.error('Erro ao carregar produtos:', error);
+            this.mostrarErro('Erro ao carregar produtos. Tente novamente.');
+        } finally {
+            this.mostrarLoading(false);
+        }
+    }
+
+    async carregarTodosProdutos() {
+        try {
+            this.mostrarLoading(true);
+            console.log('Carregando todos os produtos...');
+            
+            const categorias = {{ categorias|map(attribute='id')|list|tojson }};
+            console.log('Categorias disponíveis:', categorias);
+            
+            let todosProdutos = [];
+            
+            for (const categoriaId of categorias) {
+                try {
+                    const response = await fetch(`/api/produtos/${categoriaId}`);
+                    if (response.ok) {
+                        const produtos = await response.json();
+                        todosProdutos = todosProdutos.concat(produtos);
+                        console.log(`Categoria ${categoriaId}:`, produtos.length, 'produtos');
+                    }
+                } catch (error) {
+                    console.error(`Erro na categoria ${categoriaId}:`, error);
+                }
+            }
+            
+            console.log('Total de produtos:', todosProdutos.length);
+            this.produtosCarregados = todosProdutos;
+            this.exibirProdutos(todosProdutos);
+            
+            document.getElementById('categoria-titulo').textContent = 'Todos os Produtos';
+            this.atualizarCategoriaAtiva('todos');
+
+        } catch (error) {
+            console.error('Erro ao carregar todos os produtos:', error);
+            this.mostrarErro('Erro ao carregar produtos. Tente novamente.');
+        } finally {
+            this.mostrarLoading(false);
+        }
+    }
+
+    exibirProdutos(produtos) {
+        const container = document.getElementById('produtos-container');
+        
+        if (!produtos || produtos.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-utensils fa-3x mb-3 text-muted"></i>
+                    <h4>Nenhum produto encontrado</h4>
+                    <p class="text-muted">Não há produtos disponíveis nesta categoria.</p>
+                </div>
+            `;
+            this.atualizarContador(0);
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="products-grid">
+                ${produtos.map(produto => this.criarCardProduto(produto)).join('')}
+            </div>
+        `;
+        
+        this.atualizarContador(produtos.length);
+    }
+
+    criarCardProduto(produto) {
+        let imagemUrl = '';
+        if (produto.imagem) {
+            imagemUrl = `/static/uploads/produtos/${produto.imagem}`;
+        } else {
+            imagemUrl = produtoImagens[produto.id] || '';
+        }
+        
+        const temImagem = !!imagemUrl;
+        const descricao = produto.descricao || 'Delicioso produto preparado com ingredientes selecionados.';
+        
+        return `
+            <div class="product-card card" 
+                onclick="cardapioApp.abrirModalProduto(${produto.id})">
+                
+                ${produto.preco > 20 ? '<span class="product-badge">Popular</span>' : ''}
+                
+                <div class="product-image-container">
+                    ${temImagem ? 
+                        `<img src="${imagemUrl}" alt="${produto.nome}" class="product-image" 
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
+                        `<div class="product-image-placeholder">
+                            <i class="fas fa-${this.getProductIcon(produto.nome)}"></i>
+                            <p>${produto.nome}</p>
+                        </div>`
+                    }
+                    ${temImagem ? `
+                        <div class="product-image-placeholder" style="display: none;">
+                            <i class="fas fa-${this.getProductIcon(produto.nome)}"></i>
+                            <p>${produto.nome}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="product-content">
+                    <h5 class="product-title">${produto.nome}</h5>
+                    <p class="product-description">${descricao}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                        <span class="product-price">R$ ${produto.preco.toFixed(2)}</span>
+                        <button class="btn btn-primary btn-sm" 
+                                onclick="event.stopPropagation(); cardapioApp.abrirModalProduto(${produto.id})">
+                            <i class="fas fa-cart-plus me-1"></i>Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getProductIcon(nome) {
+        const nomeLower = nome.toLowerCase();
+        
+        if (nomeLower.includes('pizza')) return 'pizza-slice';
+        if (nomeLower.includes('burger') || nomeLower.includes('x-') || nomeLower.includes('lanche')) return 'hamburger';
+        if (nomeLower.includes('bebida') || nomeLower.includes('suco') || nomeLower.includes('refri') || nomeLower.includes('coca')) return 'wine-glass';
+        if (nomeLower.includes('sorvete') || nomeLower.includes('sobremesa') || nomeLower.includes('brownie') || nomeLower.includes('doce')) return 'ice-cream';
+        if (nomeLower.includes('batata') || nomeLower.includes('porção') || nomeLower.includes('onion')) return 'utensils';
+        if (nomeLower.includes('frango') || nomeLower.includes('carne')) return 'drumstick';
+        return 'hamburger';
+    }
+
+    async abrirModalProduto(produtoId) {
+        try {
+            // Buscar informações completas do produto
+            const produto = this.produtosCarregados.find(p => p.id === produtoId);
+            if (!produto) {
+                console.error('Produto não encontrado:', produtoId);
+                return;
+            }
+
+            console.log('Abrindo modal para produto:', produto); // Debug
+
+            document.getElementById('produto_id').value = produto.id;
+            document.getElementById('produto-nome').textContent = produto.nome;
+            document.getElementById('produto-descricao').textContent = produto.descricao || 'Delicioso produto preparado com ingredientes selecionados.';
+            document.getElementById('produto-preco').textContent = `R$ ${produto.preco.toFixed(2)}`;
+            
+            // Configurar imagem no modal
+            const imagemContainer = document.getElementById('produto-imagem-container');
+            let imagemUrl = '';
+            
+            if (produto.imagem) {
+                imagemUrl = `/static/uploads/produtos/${produto.imagem}`;
+            } else {
+                imagemUrl = produtoImagens[produto.id] || '';
+            }
+            
+            if (imagemUrl) {
+                imagemContainer.innerHTML = `
+                    <img src="${imagemUrl}" alt="${produto.nome}" class="modal-product-image"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="product-image-placeholder" style="display: none;">
+                        <i class="fas fa-${this.getProductIcon(produto.nome)} fa-3x"></i>
+                        <p class="mt-2">${produto.nome}</p>
+                    </div>
+                `;
+            } else {
+                imagemContainer.innerHTML = `
+                    <div class="product-image-placeholder">
+                        <i class="fas fa-${this.getProductIcon(produto.nome)} fa-3x"></i>
+                        <p class="mt-2">${produto.nome}</p>
+                    </div>
+                `;
+            }
+            
+            // Limpar observação anterior
+            document.getElementById('observacao').value = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('produtoModal'));
+            modal.show();
+
+        } catch (error) {
+            console.error('Erro ao abrir modal:', error);
+            alert('Erro ao carregar informações do produto.');
+        }
+    }
+
+    async adicionarAoCarrinho(e) {
+        e.preventDefault();
+        
+        const produtoId = document.getElementById('produto_id').value;
+        const observacao = document.getElementById('observacao').value;
+        
+        try {
+            const formData = new FormData();
+            formData.append('produto_id', produtoId);
+            formData.append('observacao', observacao);
+
+            const response = await fetch('/adicionar_carrinho', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('produtoModal'));
+                modal.hide();
+                
+                if (window.carrinhoManager) {
+                    window.carrinhoManager.mostrarMensagem('Sucesso!', 'Produto adicionado ao carrinho!', 'success');
+                    window.carrinhoManager.updateCartBadgeCount(data.carrinho_count);
+                } else {
+                    alert('Produto adicionado ao carrinho!');
+                }
+                
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Erro ao adicionar ao carrinho:', error);
+            alert('Erro ao adicionar produto ao carrinho.');
+        }
+    }
+
+    setupSearch() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', this.debounce(() => {
+                this.filtrarProdutos(searchInput.value);
+            }, 300));
+        }
+    }
+
+    filtrarProdutos(termo) {
+        if (!termo) {
+            this.exibirProdutos(this.produtosCarregados);
+            return;
+        }
+
+        const produtosFiltrados = this.produtosCarregados.filter(produto =>
+            produto.nome.toLowerCase().includes(termo.toLowerCase()) ||
+            (produto.descricao && produto.descricao.toLowerCase().includes(termo.toLowerCase()))
+        );
+
+        this.exibirProdutos(produtosFiltrados);
+    }
+
+    atualizarCategoriaAtiva(categoriaId) {
+        document.querySelectorAll('.categoria-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        let btnAtivo;
+        if (categoriaId === 'todos') {
+            btnAtivo = document.getElementById('btn-todos');
+        } else {
+            btnAtivo = document.querySelector(`.categoria-btn[data-categoria-id="${categoriaId}"]`);
+        }
+        
+        if (btnAtivo) {
+            btnAtivo.classList.add('active');
+        }
+    }
+
+    atualizarContador(quantidade) {
+        const texto = quantidade === 1 ? '1 produto' : `${quantidade} produtos`;
+        document.getElementById('contador-produtos').textContent = texto;
+    }
+
+    mostrarLoading(mostrar) {
+        const container = document.getElementById('produtos-container');
+        if (mostrar) {
+            container.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p class="text-muted">Carregando produtos...</p>
+                </div>
+            `;
+        }
+    }
+
+    mostrarErro(mensagem) {
+        const container = document.getElementById('produtos-container');
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                <h4>Ops! Algo deu errado</h4>
+                <p class="text-muted">${mensagem}</p>
+                <button class="btn btn-primary mt-3" onclick="cardapioApp.carregarTodosProdutos()">
+                    <i class="fas fa-redo me-2"></i>Tentar Novamente
+                </button>
+            </div>
+        `;
+    }
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    window.cardapioApp = new CardapioManagerApp();
+});
+</script>
+{% endblock %}

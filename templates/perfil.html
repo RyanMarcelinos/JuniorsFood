@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Meus Dados</div>
+            <div class="card-body">
+                <p><strong>Usuário:</strong> {{ current_user.username }}</p>
+                <p><strong>Email:</strong> {{ current_user.email }}</p>
+                <p><strong>Membro desde:</strong> {{ current_user.created_at.strftime('%d/%m/%Y') }}</p>
+                
+                <hr>
+                
+                <h6>Alterar Senha</h6>
+                <form method="POST" action="{{ url_for('alterar_senha') }}">
+                    <div class="mb-2">
+                        <input type="password" class="form-control form-control-sm" name="senha_atual" placeholder="Senha atual" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="password" class="form-control form-control-sm" name="nova_senha" placeholder="Nova senha" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="password" class="form-control form-control-sm" name="confirmar_senha" placeholder="Confirmar nova senha" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Alterar Senha</button>
+                </form>
+            </div>
+            <hr>
+            <div class="text-center">
+                <a href="{{ url_for('meus_enderecos') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-map-marker-alt me-2"></i>Gerenciar Endereços
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Meus Pedidos</div>
+            <div class="card-body">
+                {% if pedidos %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Data</th>
+                                    <th>Itens</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pedido in pedidos %}
+                                <tr>
+                                    <td>#{{ pedido.id }}</td>
+                                    <td>{{ pedido.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        {% for item in pedido.itens %}
+                                        {{ item.quantidade }}x {{ item.produto.nome }}<br>
+                                        {% endfor %}
+                                    </td>
+                                    <td>R$ {{ "%.2f"|format(pedido.total) }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ pedido.status }}">
+                                            {{ pedido.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted">Nenhum pedido realizado</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

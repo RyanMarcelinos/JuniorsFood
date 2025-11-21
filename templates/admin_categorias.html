@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gerenciar Categorias</h2>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adicionarCategoriaModal">
+        Adicionar Categoria
+    </button>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if categorias %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-custom">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Produtos</th>
+                                <th>Status</th>
+                                <th>Data Criação</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for categoria in categorias %}
+                            <tr>
+                                <td>{{ categoria.id }}</td>
+                                <td>{{ categoria.nome }}</td>
+                                <td>{{ categoria.descricao|truncate(50) if categoria.descricao else '-' }}</td>
+                                <td>{{ categoria.produtos|length }}</td>
+                                <td>
+                                    {% if categoria.ativo %}
+                                        <span class="badge bg-success">Ativa</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativa</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ categoria.created_at.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-warning" 
+                                            onclick="editarCategoria({{ categoria.id }}, '{{ categoria.nome }}', '{{ categoria.descricao }}')">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-sm {% if categoria.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                            onclick="toggleCategoria({{ categoria.id }})">
+                                        {% if categoria.ativo %}Desativar{% else %}Ativar{% endif %}
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted">Nenhuma categoria cadastrada</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Categoria -->
+<div class="modal fade" id="adicionarCategoriaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Nova Categoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formAdicionarCategoria" method="POST" action="{{ url_for('admin_adicionar_categoria') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="categoria_nome" class="form-label">Nome da Categoria:</label>
+                        <input type="text" class="form-control" id="categoria_nome" name="nome" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="categoria_descricao" class="form-label">Descrição:</label>
+                        <textarea class="form-control" id="categoria_descricao" name="descricao" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Adicionar Categoria</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Categoria -->
+<div class="modal fade" id="editarCategoriaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Categoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEditarCategoria">
+                <div class="modal-body">
+                    <input type="hidden" id="editar_categoria_id" name="categoria_id">
+                    
+                    <div class="mb-3">
+                        <label for="editar_categoria_nome" class="form-label">Nome da Categoria:</label>
+                        <input type="text" class="form-control" id="editar_categoria_nome" name="nome" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editar_categoria_descricao" class="form-label">Descrição:</label>
+                        <textarea class="form-control" id="editar_categoria_descricao" name="descricao" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCategoria(categoriaId) {
+    if (confirm('Tem certeza que deseja alterar o status desta categoria?')) {
+        fetch(`/admin/categoria/${categoriaId}/toggle`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        });
+    }
+}
+
+function editarCategoria(id, nome, descricao) {
+    document.getElementById('editar_categoria_id').value = id;
+    document.getElementById('editar_categoria_nome').value = nome;
+    document.getElementById('editar_categoria_descricao').value = descricao || '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editarCategoriaModal'));
+    modal.show();
+}
+
+document.getElementById('formAdicionarCategoria').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    });
+});
+
+document.getElementById('formEditarCategoria').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const categoriaId = document.getElementById('editar_categoria_id').value;
+    
+    fetch(`/admin/categoria/${categoriaId}/editar`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    });
+});
+</script>
+{% endblock %}
